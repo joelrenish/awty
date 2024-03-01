@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">awty</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="msg">Message to be Texted</string>
+    <string name="phone">Phone Number</string>
+    <string name="mins">Minutes between texts</string>
+</resources>
