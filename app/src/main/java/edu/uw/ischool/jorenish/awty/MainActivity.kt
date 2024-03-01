@@ -1,5 +1,9 @@
 package edu.uw.ischool.jorenish.awty
 
+import android.Manifest
+import android.telephony.SmsManager
+import android.content.pm.PackageManager
+import android.os.Build
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -16,7 +20,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mins: EditText
     private lateinit var startStopButton: Button
     private var handler: Handler = Handler()
-    private var toastRunnable: Runnable? = null
+    private var smsRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,22 +64,51 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        toastRunnable = object : Runnable {
+        smsRunnable = object : Runnable {
             override fun run() {
-                Toast.makeText(this@MainActivity, messageText, Toast.LENGTH_SHORT).show()
+                sendSMS(phoneNumberText, messageText)
                 handler.postDelayed(this, intervalValue * 60 * 1000) // Convert minutes to milliseconds
             }
         }
-        handler.post(toastRunnable!!)
-
+        handler.post(smsRunnable!!)
         startStopButton.text = getString(R.string.stop)
     }
 
     private fun stopMsgs() {
-
-        toastRunnable?.let { handler.removeCallbacks(it) }
-
+        smsRunnable?.let { handler.removeCallbacks(it) }
         startStopButton.text = getString(R.string.start)
+    }
+
+    private fun sendSMS(phoneNumber: String, message: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
+                val smsManager = SmsManager.getDefault()
+                smsManager.sendTextMessage(phoneNumber, null, message, null, null)
+                Toast.makeText(this, "Message sent to $phoneNumber", Toast.LENGTH_SHORT).show()
+            } else {
+                requestPermissions(arrayOf(Manifest.permission.SEND_SMS), PERMISSION_REQUEST_SEND_SMS)
+            }
+        } else {
+            val smsManager = SmsManager.getDefault()
+            smsManager.sendTextMessage(phoneNumber, null, message, null, null)
+            Toast.makeText(this, "Message sent to $phoneNumber", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            PERMISSION_REQUEST_SEND_SMS -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "SMS permission granted. You can now send SMS messages.", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "SMS permission denied. Message not sent.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+    companion object {
+        private const val PERMISSION_REQUEST_SEND_SMS = 123
     }
 
 }
